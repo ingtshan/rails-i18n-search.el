@@ -72,12 +72,13 @@
          (confirm-nonexistent-file-or-buffer)))))
 
 (defun rails-i18n-insert-new-var (region)
-  (save-excursion
-    (save-restriction
-      (let ((space "")
-            (keep-read t)
-            (var "")
-            (prompt (concat "type : to finish, i18n key " region " -> ")))
+  (let ((space "")
+        (keep-read t)
+        (var "")
+        (prompt (concat "type : to finish, i18n value " region " -> "))
+        (location nil))
+    (save-excursion
+      (save-restriction
         (while keep-read
           (let((candidate nil)
                (input "")
@@ -97,6 +98,7 @@
             (when (string-match ":$" input)
               (end-of-buffer)
               (setq var (concat var (substring input 0 -1)))
+              (setq location (point))
               (insert (concat space input " " region "\n"))
               (setq keep-read nil))
             (if (string-match "\\.$" input)
@@ -116,8 +118,9 @@
             (when (and new-tab keep-read)
               (end-of-buffer)
               (insert (concat space input ":\n"))
-              (setq var (concat var input ".")))))
-        var))))
+              (setq var (concat var input ".")))))))
+    (if location (goto-char location))
+    var))
 
 (defun rails-i18n-search-dwim-html-style ()
   (interactive)
@@ -138,9 +141,9 @@
         (find-file-noselect file-path)
       (beginning-of-buffer)
       (let ((rg
-             (concat "\\([ ]+\\)\\([a-zA-Z0-9_]+\\)\\(: "
+             (concat "\\([ ]+\\)\\([a-zA-Z0-9_]+\\)\\(: ['\"]*"
                      region
-                     "$\\)")))
+                     "['\"]*$\\)")))
         (when (search-forward-regexp rg nil t)
           ;; can base on level, and collect as one?
           ;; yes we can!
@@ -172,8 +175,9 @@
 (defun rails-i18n-search-replace-regex-select-style ()
   (interactive)
   (when (region-active-p)
-    (let* ((style-list '(("html-plain-text" . "{{ $t('%s') }}")
-                         ("html-in-tage   " . "$t('%s')")
+    (let* ((style-list '(("default        " . "I18n.t('%s')")
+                         ("html-plain-text" . "{{ $t('%s') }}")
+                         ("html-in-tag    " . "$t('%s')")
                          ("js-style       " . "this.$t('%s')")))
            (select (completing-read "check your code style: "
                                     (mapcar (lambda (c) (concat (car c) "\t" (cdr c))) style-list)))
@@ -185,9 +189,9 @@
                (region-beginning)
                (region-end) rails-i18n-search-default-yml)
         (unless (rails-i18n-search-replace-region-format
-         style
-         (region-beginning)
-         (region-end) rails-i18n-search-extend-yml)
+                 style
+                 (region-beginning)
+                 (region-end) rails-i18n-search-extend-yml)
           (message "No match i18n value, update yml file?"))))))
 
 (provide 'rails-i18n-search)
