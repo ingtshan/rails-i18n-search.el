@@ -172,6 +172,7 @@
 (defvar rails-i18n-search-default-yml nil)
 (defvar rails-i18n-search-extend-yml nil)
 
+;;;###autoload
 (defun rails-i18n-search-replace-regex-select-style ()
   (interactive)
   (when (region-active-p)
